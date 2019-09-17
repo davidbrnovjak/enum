@@ -38,7 +38,16 @@ final class ConsistencyChecker
 			$properDoc = "/**\n * " . implode("\n * ", $missingAnnotations) . "\n */\n";
 			throw new UsageException("You have forgotten to add @method annotations for enum '{$enumReflection->getName()}'. Documentation block should contain: \n$properDoc");
 		}
-		// todo: @method annotations without constants
+
+    $classNameEscaped = preg_quote($className, '/');
+		preg_match_all("/@method static {$classNameEscaped} ([\S]+)\(\)/", $docBlock, $matches);
+		$annotatedMethods = $matches[1];
+		$constants = $enumMeta->getConstantNames();
+		foreach ($annotatedMethods as $methodName) {
+		  if (!in_array($methodName, $constants, true)) {
+        throw new UsageException("Enum '{$enumReflection->getName()}' has annotated method {$methodName} but it’s instance is not provided in 'provideInstances()'.");
+      }
+    }
 	}
 
 	private static function checkAllInstancesProvided(Meta $enumMeta): void
